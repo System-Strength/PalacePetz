@@ -4,6 +4,14 @@
     <!-- Tools -->
     <string name="loading">Loading…</string>
     <string name="one" translatable="false">1</string>
+    <string name="filter_animals">Filter animals</string>
+    <string name="dogs">Dogs</string>
+    <string name="cats">Cats</string>
+    <string name="hamster" translatable="false">hamster</string>
+    <string name="birds">Birds</string>
+    <string name="consultations">Consultation</string>
+    <string name="weHaveAProblem">We have a problem with our server.\nTry again later</string>
+    <string name="select_payment_method">Select a payment method.</string>
 
     <!-- Sing In / Sing Up Screen -->
     <string name="login">Login</string>
@@ -54,12 +62,17 @@
     <string name="could_connect_verify_device">Could not connect to device.\nPlease verify if your device is on.</string>
     <string name="noProblem_lets_help_you">NO PROBLEM,\nLET\'S HELP YOU.</string>
     <string name="change_password">Change Password</string>
+    <string name="put_water">PUT WATER</string>
+    <string name="put_racao">PLACE RATION</string>
+    <string name="disconnect">DISCONNECT</string>
 
     <!-- Sheet Menu -->
     <string name="no">No</string>
     <string name="yes">Yes</string>
     <string name="really_want_logOut">Do you really want to log out?</string>
     <string name="logout">LogOut</string>
+    <string name="historic">Historic</string>
+    <string name="leave">Leave</string>
 
     <!-- Profile / EditProfile Screen -->
     <string name="personalname">Personal Name</string>
@@ -71,11 +84,14 @@
     <string name="editProfile">Edit Profile</string>
     <string name="gallery">Gallery</string>
     <string name="cancel">Cancel</string>
-    <string name="select_payment_method">Select the upload method</string>
+    <string name="select_upload_method">Select the upload method</string>
     <string name="change_profile_photo">Change profile photo</string>
     <string name="camera">Camera</string>
     <string name="cpf">CPF</string>
     <string name="cep" translatable="false">CEP</string>
+    <string name="couldnt_insert">Couldn\'t insert your profile image</string>
+    <string name="select_an_image">Select an image</string>
+    <string name="uploadFailed">Upload failed please try again later</string>
 
     <!-- Register Address -->
     <string name="title_activity_register_address" translatable="false">Map</string>
@@ -98,5 +114,62 @@
     <string name="buyNow">Buy Now</string>
     <string name="product_name">Product Name</string>
     <string name="price">Price</string>
+    <string name="cpfinformedisInvalid">The CPF informed is invalid</string>
+    <string name="my_shopping_cart">My Shopping Cart</string>
+    <string name="your_ShoppingCart_asEmpty">YOUR SHOPPING CART IS EMPTY.</string>
+    <string name="see_products">SEE PRODUCTS</string>
+    <string name="you_dont_haveAddressRegistered">YOU DON\'T HAVE YET A REGISTERED ADDRESS.</string>
+    <string name="sign_up_now">SING UP NOW</string>
+    <string name="sign_up_latter">REGISTER LATER</string>
+
+    <!-- Card / Card Registration -->
+    <string name="ex_shelfLife_card" translatable="false">XX/XX</string>
+    <string name="ex_numberCard_card" translatable="false">•••• •••• •••• ••••</string>
+    <string name="fulanodetal" translatable="false">Falano de Tal</string>
+    <string name="myCards">My Cards</string>
+    <string name="registered_cards">REGISTERED CARDS</string>
+    <string name="no_card_registered">No card registered</string>
+    <string name="add_card">Add Card</string>
+    <string name="add_new_card">Add new Card</string>
+    <string name="cardNumber">Card Number</string>
+    <string name="expiration_date">Expiration date</string>
+    <string name="cvv" translatable="false">CVV</string>
+    <string name="name_printed_on_the_card">Name Printed on the card</string>
+    <string name="no_flag_selected">The card`s flag was not requested</string>
+    <string name="cardNumber_wrongInsert">Card number inserted incorrectly</string>
+    <string name="shelfLife_incorrectly">Expiration date entered incorrectly</string>
+    <string name="cvv_inserted_incorrectly">CVV inserted incorrectly</string>
+    <string name="name_incorrectly_inserted">Name entered incorrectly</string>
+    <string name="yours_cards">Your cards</string>
+    <string name="what_would_you_this_card">What would you this card</string>
+    <string name="remove">Remove</string>
+    <string name="card_not_found">Card not found</string>
+
+    <!-- Services -->
+    <string name="services">Services</string>
+    <string name="choose_a_service">CHOOSE A SERVICE</string>
+    <string name="veterinary_consultation">VETERINARY CONSULTATION</string>
+    <string name="bath_and_tosa">BATH AND TOSA</string>
+    <string name="schedule_consultation">SCHEDULE CONSULTATION</string>
+    <string name="schedule_bath_and_tosa">SCHEDULE BATH AND TOSA</string>
+    <string name="select_a_time">Select a time</string>
+    <string name="select_a_date">Select a date</string>
+    <string name="its_not_possible_scheduleYear">It is not possible to schedule an appointment in the given year.</string>
+    <string name="its_not_possible_scheduleMonth">It is not possible to schedule an appointment in the given month.</string>
+    <string name="its_not_possible_scheduleDay">It is not possible to schedule an appointment on the day informed.</string>
+    <string name="sorryButPalaceWillBeCosed">Sorry, but at the selected time PalacePetz will be closed</string>
+    <string name="description">Description…</string>
+    <string name="to_schedule">TO SCHEDULE</string>
+    <string name="select_your_pet">Select your pet.</string>
+    <string name="select_a_veterinarian">Select a veterinarian.</string>
+    <string name="WITHDRAWAL_DELIVERY">WITHDRAWAL / DELIVERY</string>
+    <string name="optionOneDeliveryMethod">1 - I will take the Pet | Receive at the residence</string>
+    <string name="optionTwoDeliveryMethod">2 - I will take the Pet | Withdraw in PetShop</string>
+    <string name="optionThreeDeliveryMethod">3 - PetShop will fetch the animal | I will withdraw in the PetShop</string>
+    <string name="optionFourDeliveryMethod">4 - PetShop will fetch the animal | Receive at the residence</string>
+    <string name="add_to_cart">ADD TO CART</string>
+    <string name="one_is_the_minumum_quantity">1 is the minimum quantity</string>
+    <string name="maximum_amount_reached">Maximum amount reached</string>
+    <string name="see_my_pets">See my pets</string>
 
 </resources>
