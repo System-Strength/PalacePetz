@@ -2,14 +2,18 @@ package co.kaua.palacepetz.Data.Products;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.util.Log;
 import android.view.View;
+import android.widget.AdapterView;
 
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 import com.airbnb.lottie.LottieAnimationView;
+
+import co.kaua.palacepetz.Activitys.ProductDetailsActivity;
 import co.kaua.palacepetz.Adapters.Products_Adapter;
 import co.kaua.palacepetz.Methods.JsonHandler;
 
@@ -21,7 +25,7 @@ import java.util.ArrayList;
 @SuppressWarnings({"rawtypes", "deprecation", "unchecked"})
 @SuppressLint("StaticFieldLeak")
 public class AsyncProducts extends AsyncTask {
-    ArrayList<DtoMenu> arrayListDto;
+    ArrayList<DtoProducts> arrayListDto;
     Activity context;
     RecyclerView recyclerProducts;
     SwipeRefreshLayout SwipeRefreshProducts;
@@ -29,7 +33,7 @@ public class AsyncProducts extends AsyncTask {
     Products_Adapter products_adapter;
     LottieAnimationView anim_loading_allProducts;
 
-    public AsyncProducts(RecyclerView recyclerProducts, SwipeRefreshLayout SwipeRefreshProducts, LottieAnimationView anim_loading_allProducts, ArrayList<DtoMenu> arrayListDto, String email_user, Activity context) {
+    public AsyncProducts(RecyclerView recyclerProducts, SwipeRefreshLayout SwipeRefreshProducts, LottieAnimationView anim_loading_allProducts, ArrayList<DtoProducts> arrayListDto, String email_user, Activity context) {
         this.recyclerProducts = recyclerProducts;
         this.context = context;
         this.SwipeRefreshProducts = SwipeRefreshProducts;
@@ -47,21 +51,26 @@ public class AsyncProducts extends AsyncTask {
 
     @Override
     protected Object doInBackground(Object[] objects) {
-        String json =  JsonHandler.getJson("https://coffeeforcode.herokuapp.com/products");
+        String json =  JsonHandler.getJson("https://palacepetzapi.herokuapp.com/products/list/");
         products_adapter = null;
         try {
             JSONObject jsonObject = new JSONObject(json);
-            JSONArray jsonArray = jsonObject.getJSONArray("Products");
+            JSONArray jsonArray = jsonObject.getJSONArray("Search");
             for (int i = 0; i < jsonArray.length() ; i++) {
-                DtoMenu dtoMenu = new DtoMenu();
-                dtoMenu.setCd_prod(jsonArray.getJSONObject(i).getInt("cd_prod"));
-                dtoMenu.setNm_prod(jsonArray.getJSONObject(i).getString("nm_prod"));
-                dtoMenu.setNm_cat(jsonArray.getJSONObject(i).getString("nm_cat"));
-                dtoMenu.setPrice_prod((float) jsonArray.getJSONObject(i).getDouble("price_prod"));
-                img_prod_ad = jsonArray.getJSONObject(i).getString("img_prod");
-                dtoMenu.setImg_prod_st(img_prod_ad);
-
-                arrayListDto.add(dtoMenu);
+                DtoProducts dtoProducts = new DtoProducts();
+                dtoProducts.setCd_prod(jsonArray.getJSONObject(i).getInt("cd_prod"));
+                dtoProducts.setCd_category(jsonArray.getJSONObject(i).getInt("cd_category"));
+                dtoProducts.setNm_category(jsonArray.getJSONObject(i).getString("nm_category"));
+                dtoProducts.setNm_product(jsonArray.getJSONObject(i).getString("nm_product"));
+                dtoProducts.setAmount(jsonArray.getJSONObject(i).getInt("amount"));
+                dtoProducts.setSpecies(jsonArray.getJSONObject(i).getString("species"));
+                dtoProducts.setProduct_price((float) jsonArray.getJSONObject(i).getDouble("product_price"));
+                dtoProducts.setDescription(jsonArray.getJSONObject(i).getString("description"));
+                dtoProducts.setDate_prod(jsonArray.getJSONObject(i).getString("date_prod"));
+                dtoProducts.setShelf_life(jsonArray.getJSONObject(i).getString("shelf_life"));
+                dtoProducts.setImage_prod(jsonArray.getJSONObject(i).getString("image_prod"));
+                dtoProducts.setPopular(jsonArray.getJSONObject(i).getInt("popular"));
+                arrayListDto.add(dtoProducts);
             }
             products_adapter = new Products_Adapter(arrayListDto, context);
             products_adapter.notifyDataSetChanged();
@@ -82,5 +91,29 @@ public class AsyncProducts extends AsyncTask {
         recyclerProducts.setVisibility(View.VISIBLE);
 
         //  Need to create Recycler Clicker
+        recyclerProducts.addOnItemTouchListener(new RecyclerItemClickListener(context, recyclerProducts,
+                new RecyclerItemClickListener.OnItemClickListener() {
+                    @Override
+                    public void onItemClick(View view, int position) {
+                        Intent goToDetails = new Intent(context, ProductDetailsActivity.class);
+                        goToDetails.putExtra("cd_prod", arrayListDto.get(position).getCd_prod());
+                        goToDetails.putExtra("image_prod", arrayListDto.get(position).getImage_prod());
+                        goToDetails.putExtra("nm_product", arrayListDto.get(position).getNm_product());
+                        goToDetails.putExtra("description", arrayListDto.get(position).getDescription());
+                        goToDetails.putExtra("product_price", arrayListDto.get(position).getProduct_price());
+                        goToDetails.putExtra("amount", arrayListDto.get(position).getAmount());
+                        context.startActivity(goToDetails);
+                    }
+
+                    @Override
+                    public void onLongItemClick(View view, int position) {
+
+                    }
+
+                    @Override
+                    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+
+                    }
+                }));
     }
 }
