@@ -23,6 +23,7 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
+import co.kaua.palacepetz.Adapters.IOnBackPressed;
 import co.kaua.palacepetz.Adapters.LoadingDialog;
 import co.kaua.palacepetz.Adapters.Warnings;
 import co.kaua.palacepetz.Data.Cards.CardService;
@@ -42,7 +43,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Objects;
 
-public class CardRegistrationFragment extends Fragment {
+public class CardRegistrationFragment extends Fragment implements IOnBackPressed {
     private EditText edit_cardNumber_cardRegister, edit_shelf_life_cardRegister, edit_cvv_cardRegister, edit_nameCard_cardRegister;
     private CardView cardBtn_addCard_registration;
     private  InputMethodManager imm;
@@ -97,7 +98,7 @@ public class CardRegistrationFragment extends Fragment {
         _Email = args.getString("email_user");
         id_user = args.getInt("id_user");
 
-        imm = (InputMethodManager) Objects.requireNonNull(getContext()).getSystemService(Context.INPUT_METHOD_SERVICE);
+        imm = (InputMethodManager) requireContext().getSystemService(Context.INPUT_METHOD_SERVICE);
 
         //  Set Mask
         edit_cardNumber_cardRegister.addTextChangedListener(MaskEditUtil.mask(edit_cardNumber_cardRegister, MaskEditUtil.FORMAT_NUMCARD));
@@ -162,13 +163,13 @@ public class CardRegistrationFragment extends Fragment {
     }
 
     private void goTo_allCard() {
-        CardRegistrationFragment cardregistrationFragment = new CardRegistrationFragment();
+        MyCardsFragment MyCardsFragment = new MyCardsFragment();
         args = new Bundle();
         args.putString("email_user", _Email);
         args.putInt("id_user", id_user);
-        cardregistrationFragment.setArguments(args);
-        transaction = Objects.requireNonNull(getActivity()).getSupportFragmentManager().beginTransaction();
-        transaction.replace(R.id.frameLayoutMain, cardregistrationFragment);
+        MyCardsFragment.setArguments(args);
+        transaction = requireActivity().getSupportFragmentManager().beginTransaction();
+        transaction.replace(R.id.frameLayoutMain, MyCardsFragment);
         transaction.commit();
     }
 
@@ -321,10 +322,10 @@ public class CardRegistrationFragment extends Fragment {
         cardBtn_addCard_registration = view.findViewById(R.id.cardBtn_addCard_registration);
         cardBtn_addCard_registration.setElevation(20);
 
-        cardFlagSelected = Objects.requireNonNull(getContext()).getResources().getDrawable(R.drawable.card_flag_selected);
-        colorMasterColor = getContext().getResources().getColor(R.color.mastercard);
-        colorVisaColor = getContext().getResources().getColor(R.color.visacard);
-        colorMaestroColor = getContext().getResources().getColor(R.color.maestrocard);
+        cardFlagSelected = requireContext().getResources().getDrawable(R.drawable.card_flag_selected);
+        colorMasterColor = requireContext().getResources().getColor(R.color.mastercard);
+        colorVisaColor = requireContext().getResources().getColor(R.color.visacard);
+        colorMaestroColor = requireContext().getResources().getColor(R.color.maestrocard);
     }
 
     private void removeAllFlagSelected() {
@@ -338,5 +339,23 @@ public class CardRegistrationFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+    }
+
+    @Override
+    public boolean onBackPressed() {
+        if (_Email != null) {
+            //action not popBackStack
+            MainFragment mainFragment = new MainFragment();
+            FragmentTransaction transaction = requireActivity().getSupportFragmentManager().beginTransaction();
+            Bundle args = new Bundle();
+            args.putString("email_user", _Email);
+            args.putInt("id_user", id_user);
+            mainFragment.setArguments(args);
+            transaction.replace(R.id.frameLayoutMain, mainFragment);
+            transaction.commit();
+            return true;
+        } else {
+            return false;
+        }
     }
 }
