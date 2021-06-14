@@ -83,16 +83,18 @@ public class EditProfileActivity extends AppCompatActivity {
         loadingDialog = new LoadingDialog(this);
         Intent intent = getIntent();
         Bundle bundle = intent.getExtras();
-        id_user = bundle.getInt("id_user");
-        FullName = bundle.getString("name_user");
-        _Email = bundle.getString("email_user");
-        cpf_user = bundle.getString("cpf_user");
-        address_user = bundle.getString("address_user");
-        complement = bundle.getString("complement");
-        zipcode = bundle.getString("zipcode");
-        phone_user = bundle.getString("phone_user");
-        birth_date = bundle.getString("birth_date");
-        img_user = bundle.getString("img_user");
+        if(bundle != null){
+            id_user = bundle.getInt("id_user");
+            FullName = bundle.getString("name_user");
+            _Email = bundle.getString("email_user");
+            cpf_user = bundle.getString("cpf_user");
+            address_user = bundle.getString("address_user");
+            complement = bundle.getString("complement");
+            zipcode = bundle.getString("zipcode");
+            phone_user = bundle.getString("phone_user");
+            birth_date = bundle.getString("birth_date");
+            img_user = bundle.getString("img_user");
+        }
         SetEditNamesChange();
         loadUserInfo();
         imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
@@ -208,6 +210,16 @@ public class EditProfileActivity extends AppCompatActivity {
     }
 
     private void loadUserInfo() {
+        DtoUser user = MainActivity.getInstance().GetUserBaseInformation();
+        FullName = user.getName_user();
+        _Email = user.getEmail();
+        cpf_user = user.getCpf_user();
+        address_user = user.getAddress_user();
+        complement = user.getComplement();
+        zipcode = user.getZipcode();
+        phone_user = user.getPhone_user();
+        birth_date = user.getBirth_date();
+        img_user = user.getImg_user();
         if (img_user == null || img_user.equals(""))
             Log.d("UserStatus", "Not User image");
         else
@@ -299,7 +311,6 @@ public class EditProfileActivity extends AppCompatActivity {
                 myCalendar.get(Calendar.DAY_OF_MONTH)).show();
     }
 
-
     private void updateLabel() {
         String myFormat = "dd/MM/yyyy"; //In which you need put here
         SimpleDateFormat sdf = new SimpleDateFormat(myFormat, Locale.US);
@@ -374,6 +385,7 @@ public class EditProfileActivity extends AppCompatActivity {
         cardBtn_ConfirmEditProfile.setElevation(20);
     }
 
+    @SuppressWarnings("deprecation")
     private void OpenGallery() {
         Intent openGallery = new Intent();
         openGallery.setType("image/*");

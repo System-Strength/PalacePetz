@@ -39,7 +39,7 @@ public class MyOrdersFragment extends Fragment implements IOnBackPressed {
 
     //  User information
     private int _IdUser;
-    private String name_user, _Email, cpf_user, address_user, complement, zipcode, phone_user, birth_date, img_user;
+    private String name_user, cpf_user, address_user, complement, zipcode, phone_user, birth_date, img_user;
 
     //  Retrofit
     final Retrofit retrofitOrder = new Retrofit.Builder()
@@ -55,7 +55,6 @@ public class MyOrdersFragment extends Fragment implements IOnBackPressed {
         Ids();
         args = getArguments();
         assert args != null;
-        _Email = args.getString("email_user");
         _IdUser = args.getInt("id_user");
         loadOrders();
 
@@ -105,20 +104,15 @@ public class MyOrdersFragment extends Fragment implements IOnBackPressed {
 
     @Override
     public boolean onBackPressed() {
-        if (_Email != null) {
-            //action not popBackStack
-            requireActivity().getWindow().setNavigationBarColor(requireActivity().getColor(R.color.background_top));
-            MainFragment mainFragment = new MainFragment();
-            FragmentTransaction transaction = requireActivity().getSupportFragmentManager().beginTransaction();
-            Bundle args = new Bundle();
-            args.putString("email_user", _Email);
-            args.putInt("id_user", _IdUser);
-            mainFragment.setArguments(args);
-            transaction.replace(R.id.frameLayoutMain, mainFragment);
-            transaction.commit();
-            return true;
-        } else {
-            return false;
-        }
+        //action not popBackStack
+        requireActivity().getWindow().setNavigationBarColor(requireActivity().getColor(R.color.background_top));
+        MainFragment mainFragment = new MainFragment();
+        FragmentTransaction transaction = requireActivity().getSupportFragmentManager().beginTransaction();
+        Bundle args = new Bundle();
+        args.putInt("id_user", _IdUser);
+        mainFragment.setArguments(args);
+        transaction.replace(R.id.frameLayoutMain, mainFragment);
+        transaction.commit();
+        return true;
     }
 }

@@ -41,6 +41,7 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 
+@SuppressWarnings("deprecation")
 public class ProfileActivity extends AppCompatActivity {
     //  Activity Items
     private TextView txt_userName_profile, txt_email_profile, txt_EditProfile_profile;
@@ -104,11 +105,21 @@ public class ProfileActivity extends AppCompatActivity {
         btnSeeMyAnimals.setOnClickListener(v -> {
             Intent goTo_AllPets = new Intent(this, AllPetsActivity.class);
             goTo_AllPets.putExtra("id_user", id_user);
+            goTo_AllPets.putExtra("birth_date", birth_date);
             startActivity(goTo_AllPets);
         });
     }
 
     private void loadUserInfo() {
+        DtoUser user = MainActivity.getInstance().GetUserBaseInformation();
+        name_user = user.getName_user();
+        _Email = user.getEmail();
+        cpf_user = user.getCpf_user();
+        address_user = user.getAddress_user();
+        complement = user.getComplement();
+        zipcode = user.getZipcode();
+        phone_user = user.getPhone_user();
+        img_user = user.getImg_user();
         if (img_user == null || img_user.equals(""))
             Log.d("UserStatus", "Not User image");
         else

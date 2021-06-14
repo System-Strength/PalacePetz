@@ -8,7 +8,6 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentTransaction;
 
 import android.annotation.SuppressLint;
-import android.app.AlertDialog;
 import android.app.Dialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -19,6 +18,9 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -27,6 +29,7 @@ import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.squareup.picasso.Picasso;
 
 import co.kaua.palacepetz.Adapters.IOnBackPressed;
+import co.kaua.palacepetz.Adapters.Warnings;
 import co.kaua.palacepetz.BuildConfig;
 import co.kaua.palacepetz.Data.ShoppingCart.CartServices;
 import co.kaua.palacepetz.Data.ShoppingCart.DtoShoppingCart;
@@ -57,38 +60,39 @@ import retrofit2.converter.gson.GsonConverterFactory;
  *  @author Kaua Vitorio
  **/
 
-@SuppressWarnings("FieldCanBeLocal")
+@SuppressWarnings({"FieldCanBeLocal", "StaticFieldLeak"})
 public class MainActivity extends AppCompatActivity {
+
     //  Screen items
     private CardView base_QuantityItemsCart_main;
     private LottieAnimationView btnMenu_Main;
     private CircleImageView icon_ProfileUser_main;
     private BottomSheetDialog bottomSheetDialog;
-    private ConstraintLayout Btn_container_ShoppingCart;
     private static FragmentTransaction transaction;
-    private TextView txt_QuantityCart_main;
-    Dialog warning_update;
-    int Count = 0;
+    private Animation CartAnim;
+    private static Dialog warning_update;
+    private int Count = 0;
+    private static MainActivity instance;
 
     //  Fragments Arguments
     private static Bundle args;
     private Bundle bundle;
 
     //  User information
-    private int _IdUser;
-    private String name_user, _Email, cpf_user, address_user, complement, zipcode, phone_user, birth_date, img_user, _Password;
+    private static int _IdUser;
+    private static String name_user, _Email, cpf_user, address_user, complement, zipcode, phone_user, birth_date, img_user, _Password;
 
     //  Set preferences
     private SharedPreferences mPrefs;
-    private static final String PREFS_NAME = "myPrefs";
+    public static final String PREFS_NAME = "myPrefs";
 
     //  Firebase / Retrofit
-    final Retrofit retrofitUser = new Retrofit.Builder()
+    private final Retrofit retrofitUser = new Retrofit.Builder()
             .baseUrl("https://palacepetzapi.herokuapp.com/")
             .addConverterFactory(GsonConverterFactory.create())
             .build();
 
-    final Retrofit retrofitMobile = new Retrofit.Builder()
+    private final Retrofit retrofitMobile = new Retrofit.Builder()
             .baseUrl("https://palacepetzapi.herokuapp.com/mobile/")
             .addConverterFactory(GsonConverterFactory.create())
             .build();
@@ -99,112 +103,178 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Ids();
+        instance = this;
+
+        //  Get all SharedPreferences
+        mPrefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        SharedPreferences sp = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         bundle = getIntent().getExtras();
-        _IdUser = bundle.getInt("id_user");
-        name_user = bundle.getString("name_user");
-        _Email = bundle.getString("email_user");
-        cpf_user = bundle.getString("cpf_user");
-        address_user = bundle.getString("address_user");
-        complement = bundle.getString("complement");
-        zipcode = bundle.getString("zipcode");
-        phone_user = bundle.getString("phone_user");
-        birth_date = bundle.getString("birth_date");
-        img_user = bundle.getString("img_user");
-        _Password = bundle.getString("password");
-        if (address_user == null || address_user.equals(""))
-            ShowAddressAlert();
-        if (img_user == null || img_user.equals(""))
-            Log.d("UserStatus", "Not User image");
-        else
-            Picasso.get().load(img_user).into(icon_ProfileUser_main);
+        if (sp.contains("pref_email") && sp.contains("pref_password")){
+            _IdUser = sp.getInt("pref_id_user", 0);
+            name_user = sp.getString("pref_name_user", "not found");
+            _Email = sp.getString("pref_email", "not found");
+            cpf_user = sp.getString("pref_cpf_user", "not found");
+            address_user = sp.getString("pref_address_user", null);
+            complement = sp.getString("pref_complement", "not found");
+            zipcode = sp.getString("pref_zipcode", "not found");
+            phone_user = sp.getString("pref_phone_user", "not found");
+            birth_date = sp.getString("pref_birth_date", "not found");
+            img_user = sp.getString("pref_img_user", null);
+            _Password = sp.getString("pref_password", "not found");
+
+            if (address_user == null || address_user.equals(""))
+                ShowAddressAlert();
+            if (img_user == null || img_user.equals(""))
+                Log.d("UserStatus", "Not User image");
+            else
+                Picasso.get().load(img_user).into(icon_ProfileUser_main);
+        }else
+            _IdUser = 0;
+
+
+        if(bundle.getInt("shortcut") != 0){
+            switch (bundle.getInt("shortcut")){
+                case 10:
+                    OpenAllProducts();
+                    break;
+                case 20:
+                    if (_IdUser == 0){
+                        LoadMainFragment();
+                        Warnings.NeedLoginWithShortCutAlert(MainActivity.this, 20);
+                    }
+                    else
+                        OpenShoppingCart();
+                    break;
+                case 30:
+                    OpenServices();
+                    break;
+                case 40:
+                    if (_IdUser == 0){
+                        LoadMainFragment();
+                        Warnings.NeedLoginWithShortCutAlert(MainActivity.this, 40);
+                    }
+                    else{
+                        LoadMainFragment();
+                        OpenFountain();
+                    }
+                    break;
+                case 50:
+                    if (_IdUser == 0){
+                        LoadMainFragment();
+                        Warnings.NeedLoginWithShortCutAlert(MainActivity.this, 50);
+                    }
+                    else
+                        OpenMyCards();
+                    break;
+            }
+        }else{
+            LoadMainFragment();
+        }
+        /*
+        *
+            _IdUser = bundle.getInt("id_user");
+            name_user = bundle.getString("name_user");
+            _Email = bundle.getString("email_user");
+            cpf_user = bundle.getString("cpf_user");
+            address_user = bundle.getString("address_user");
+            complement = bundle.getString("complement");
+            zipcode = bundle.getString("zipcode");
+            phone_user = bundle.getString("phone_user");
+            birth_date = bundle.getString("birth_date");
+            img_user = bundle.getString("img_user");
+            _Password = bundle.getString("password");
+        *
+        * */
 
         //  Set items gone
         base_QuantityItemsCart_main.setVisibility(View.GONE);
 
-        //  Get all SharedPreferences
-        mPrefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        CreatingMenuSheet();
+        CreateMenuSheetUser();
+    }
 
+    private void LoadMainFragment() {
         MainFragment mainFragment = new MainFragment();
         args = new Bundle();
-        args.putString("email_user", _Email);
         args.putInt("id_user", _IdUser);
         mainFragment.setArguments(args);
         transaction = getSupportFragmentManager().beginTransaction();
         transaction.replace(R.id.frameLayoutMain, mainFragment);
         transaction.commit();
-
-        icon_ProfileUser_main.setOnClickListener(v -> {
-            getWindow().setNavigationBarColor(getColor(R.color.background_top));
-            Intent goTo_profile = new Intent(MainActivity.this, ProfileActivity.class);
-            goTo_profile.putExtra("id_user", _IdUser);
-            goTo_profile.putExtra("name_user", name_user);
-            goTo_profile.putExtra("email_user", _Email);
-            goTo_profile.putExtra("cpf_user", cpf_user);
-            goTo_profile.putExtra("address_user", address_user);
-            goTo_profile.putExtra("complement", complement);
-            goTo_profile.putExtra("zipcode", zipcode);
-            goTo_profile.putExtra("phone_user", phone_user);
-            goTo_profile.putExtra("birth_date", birth_date);
-            goTo_profile.putExtra("img_user", img_user);
-            goTo_profile.putExtra("password", _Password);
-            startActivity(goTo_profile);
-        });
-
-        //  Click to open ShoppingCart Fragment
-        Btn_container_ShoppingCart.setOnClickListener(v -> {
-            ShoppingCartFragment shoppingCartFragment = new ShoppingCartFragment();
-            args = new Bundle();
-            args.putString("email_user", _Email);
-            args.putInt("id_user", _IdUser);
-            shoppingCartFragment.setArguments(args);
-            transaction = getSupportFragmentManager().beginTransaction();
-            transaction.replace(R.id.frameLayoutMain, shoppingCartFragment);
-            transaction.commit();
-        });
-
-        CreatingMenuSheet();
     }
 
-    @SuppressLint("SetTextI18n")
-    public void CheckShoppingCart(){
-        CartServices services = retrofitUser.create(CartServices.class);
-        Call<DtoShoppingCart> cartCall = services.getCarSizetUser(_IdUser);
-        cartCall.enqueue(new Callback<DtoShoppingCart>() {
-            @Override
-            public void onResponse(@NonNull Call<DtoShoppingCart> call, @NonNull Response<DtoShoppingCart> response) {
-                if (response.code() == 200){
-                    assert response.body() != null;
-                    txt_QuantityCart_main.setText(response.body().getLength() + "");
-                    if (response.body().getLength() > 0)
-                        base_QuantityItemsCart_main.setVisibility(View.VISIBLE);
-                    else
-                        base_QuantityItemsCart_main.setVisibility(View.GONE);
-                }
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<DtoShoppingCart> call, @NonNull Throwable t) {
-
-            }
-        });
-    }
-    
-    public void ReOpenCart(){
-        ShoppingCartFragment shoppingCartFragment = new ShoppingCartFragment();
+    public final void OpenMyCards() {
+        if (_IdUser != 0){
+        MyCardsFragment myCardsFragment = new MyCardsFragment();
         args = new Bundle();
         args.putString("email_user", _Email);
         args.putInt("id_user", _IdUser);
-        shoppingCartFragment.setArguments(args);
+        myCardsFragment.setArguments(args);
         transaction = getSupportFragmentManager().beginTransaction();
-        transaction.replace(R.id.frameLayoutMain, shoppingCartFragment);
+        transaction.replace(R.id.frameLayoutMain, myCardsFragment);
         transaction.commit();
+        }else
+            Warnings.NeedLoginAlert(MainActivity.this);
+    }
+
+    public final void OpenAddressEdit(){
+        if (_IdUser != 0){
+            Intent goTo_AddressRegister = new Intent(MainActivity.this, RegisterAddressActivity.class);
+            goTo_AddressRegister.putExtra("id_user", _IdUser);
+            goTo_AddressRegister.putExtra("name_user", name_user);
+            goTo_AddressRegister.putExtra("email_user", _Email);
+            goTo_AddressRegister.putExtra("cpf_user", cpf_user);
+            goTo_AddressRegister.putExtra("address_user", address_user);
+            goTo_AddressRegister.putExtra("complement", complement);
+            goTo_AddressRegister.putExtra("zipcode", zipcode);
+            goTo_AddressRegister.putExtra("phone_user", phone_user);
+            goTo_AddressRegister.putExtra("birth_date", birth_date);
+            goTo_AddressRegister.putExtra("img_user", img_user);
+            startActivity(goTo_AddressRegister);
+        }else
+            Warnings.NeedLoginAlert(MainActivity.this);
+    }
+
+    int cardSize = 0;
+    @SuppressLint("SetTextI18n")
+    public void CheckShoppingCart(){
+        if (_IdUser != 0){
+            if (cardSize != 0){
+                base_QuantityItemsCart_main.setVisibility(View.VISIBLE);
+                CartAnim = AnimationUtils.loadAnimation(getApplicationContext(),R.anim.cart_size_animation_gone);
+                base_QuantityItemsCart_main.setAnimation(CartAnim);
+            }
+            else
+                base_QuantityItemsCart_main.setVisibility(View.GONE);
+
+            CartServices services = retrofitUser.create(CartServices.class);
+            Call<DtoShoppingCart> cartCall = services.getCarSizetUser(_IdUser);
+            cartCall.enqueue(new Callback<DtoShoppingCart>() {
+                @Override
+                public void onResponse(@NonNull Call<DtoShoppingCart> call, @NonNull Response<DtoShoppingCart> response) {
+                    if (response.code() == 200){
+                        assert response.body() != null;
+                        cardSize = response.body().getLength();
+                        if (cardSize != 0){
+                            base_QuantityItemsCart_main.setVisibility(View.VISIBLE);
+                            CartAnim = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.cart_size_animation_gone);
+                            base_QuantityItemsCart_main.setAnimation(CartAnim);
+                        }
+                    }
+                }
+                @Override
+                public void onFailure(@NonNull Call<DtoShoppingCart> call, @NonNull Throwable t) {}
+            });
+        }
+    }
+    
+    public void ReOpenCart(){
+        OpenShoppingCart();
     }
 
     private void Ids() {
         btnMenu_Main = findViewById(R.id.btnMenu_Main);
         icon_ProfileUser_main = findViewById(R.id.icon_ProfileUser_main);
-        Btn_container_ShoppingCart = findViewById(R.id.Btn_container_ShoppingCart);
-        txt_QuantityCart_main = findViewById(R.id.txt_QuantityCart_main);
         base_QuantityItemsCart_main = findViewById(R.id.base_QuantityItemsCart_main);
     }
 
@@ -224,108 +294,222 @@ public class MainActivity extends AppCompatActivity {
             CardView myCards = sheetView.findViewById(R.id.BtnMyCardsSheetMenu);
             CardView historic = sheetView.findViewById(R.id.BtnHistoricSheetMenu);
             CardView services = sheetView.findViewById(R.id.BtnServicesSheetMenu);
+            TextView txt_logout = sheetView.findViewById(R.id.txt_sheet_LogOut);
+            ImageView img_logout = sheetView.findViewById(R.id.Img_BtnLogOutSheetMenu);
+            if (_IdUser == 0){
+                txt_logout.setText(R.string.login);
+                img_logout.setImageResource(R.drawable.ic_albatross);
+                sheetView.findViewById(R.id.BtnLogOutSheetMenu).setOnClickListener(v1 -> {
+                    bottomSheetDialog.dismiss();
+                    Intent login = new Intent(getApplicationContext(), LoginActivity.class);
+                    startActivity(login);
+                    finish();
+                });
+            }else
+                //  When click in this linear will to Show LogOut Message
+                sheetView.findViewById(R.id.BtnLogOutSheetMenu).setOnClickListener(v1 -> Warnings.LogoutDialog(MainActivity.this, bottomSheetDialog));
 
             //  Show Main Fragment
             home.setOnClickListener(v1 -> {
-                MainFragment mainFragment = new MainFragment();
-                args = new Bundle();
-                args.putString("email_user", _Email);
-                args.putInt("id_user", _IdUser);
-                mainFragment.setArguments(args);
-                transaction = getSupportFragmentManager().beginTransaction();
-                transaction.replace(R.id.frameLayoutMain, mainFragment);
-                transaction.commit();
+                LoadMainFragment();
                 bottomSheetDialog.dismiss();
             });
 
             historic.setOnClickListener(v1 -> {
+                bottomSheetDialog.dismiss();
+                if (_IdUser != 0){
                 HistoricFragment historicFragment = new HistoricFragment();
                 args = new Bundle();
-                args.putString("email_user", _Email);
                 args.putInt("id_user", _IdUser);
                 historicFragment.setArguments(args);
                 transaction = getSupportFragmentManager().beginTransaction();
                 transaction.replace(R.id.frameLayoutMain, historicFragment);
                 transaction.commit();
-                bottomSheetDialog.dismiss();
+                }else
+                    Warnings.NeedLoginAlert(MainActivity.this);
             });
 
             //  Show All Products fragment
             products.setOnClickListener(v1 -> {
-                AllProductsFragment allProductsFragment = new AllProductsFragment();
-                args = new Bundle();
-                args.putString("email_user", _Email);
-                args.putInt("id_user", _IdUser);
-                allProductsFragment.setArguments(args);
-                transaction = getSupportFragmentManager().beginTransaction();
-                transaction.replace(R.id.frameLayoutMain, allProductsFragment);
-                transaction.commit();
+                OpenAllProducts();
                 bottomSheetDialog.dismiss();
             });
 
             //  Show Palace Fountain Fragment
             palaceFountain.setOnClickListener(v1 -> {
-                Intent goTo_DevicePresentation = new Intent(this, DevicePresentationActivity.class);
-                startActivity(goTo_DevicePresentation);
+                OpenFountain();
                 bottomSheetDialog.dismiss();
             });
 
             //  Show My Orders Fragment
             myOrders.setOnClickListener(v1 -> {
-                MyOrdersFragment myOrdersFragment = new MyOrdersFragment();
-                args = new Bundle();
-                args.putString("email_user", _Email);
-                args.putInt("id_user", _IdUser);
-                myOrdersFragment.setArguments(args);
-                transaction = getSupportFragmentManager().beginTransaction();
-                transaction.replace(R.id.frameLayoutMain, myOrdersFragment);
-                transaction.commit();
                 bottomSheetDialog.dismiss();
+                if (_IdUser != 0)
+                    OpenMyOrders();
+                else
+                    Warnings.NeedLoginAlert(MainActivity.this);
             });
 
             //  Show My Cards Fragment
             myCards.setOnClickListener(v1 -> {
-                MyCardsFragment myCardsFragment = new MyCardsFragment();
-                args = new Bundle();
-                args.putString("email_user", _Email);
-                args.putInt("id_user", _IdUser);
-                myCardsFragment.setArguments(args);
-                transaction = getSupportFragmentManager().beginTransaction();
-                transaction.replace(R.id.frameLayoutMain, myCardsFragment);
-                transaction.commit();
+                OpenMyCards();
                 bottomSheetDialog.dismiss();
             });
 
             services.setOnClickListener(v1 -> {
-                ServicesFragment servicesFragment = new ServicesFragment();
-                args = new Bundle();
-                args.putString("email_user", _Email);
-                args.putInt("id_user", _IdUser);
-                servicesFragment.setArguments(args);
-                transaction = getSupportFragmentManager().beginTransaction();
-                transaction.replace(R.id.frameLayoutMain, servicesFragment);
-                transaction.commit();
+                OpenServices();
                 bottomSheetDialog.dismiss();
-            });
-
-            //  When click in this linear will to LoginActivity
-            sheetView.findViewById(R.id.BtnLogOutSheetMenu).setOnClickListener(v1 -> {
-                AlertDialog.Builder warning_alert = new AlertDialog.Builder(MainActivity.this);
-                warning_alert.setTitle(getString(R.string.logout));
-                warning_alert.setMessage(getString(R.string.really_want_logOut));
-                warning_alert.setPositiveButton(getString(R.string.yes), (dialog, which) -> {
-                    mPrefs.edit().clear().apply();
-                    Intent goBack_toLogin = new Intent(MainActivity.this, LoginActivity.class);
-                    startActivity(goBack_toLogin);
-                    finish();
-                });
-                warning_alert.setNegativeButton(getString(R.string.no), null);
-                warning_alert.show();
             });
 
             bottomSheetDialog.setContentView(sheetView);
             bottomSheetDialog.show();
         });
+    }
+
+    public final void OpenMyOrders() {
+        MyOrdersFragment myOrdersFragment = new MyOrdersFragment();
+        args = new Bundle();
+        args.putInt("id_user", _IdUser);
+        myOrdersFragment.setArguments(args);
+        transaction = getSupportFragmentManager().beginTransaction();
+        transaction.replace(R.id.frameLayoutMain, myOrdersFragment);
+        transaction.commit();
+    }
+
+    @SuppressLint("SetTextI18n")
+    private void CreateMenuSheetUser(){
+        icon_ProfileUser_main.setOnClickListener(v -> {
+            if (_IdUser != 0){
+                getWindow().setNavigationBarColor(getColor(R.color.background_top));
+                bottomSheetDialog = new BottomSheetDialog(MainActivity.this, R.style.BottomSheetTheme);
+                //  Creating View for SheetMenu
+                View sheetView = LayoutInflater.from(getApplicationContext()).inflate(R.layout.adapter_menu_sheet_user,
+                        findViewById(R.id.menu_sheet_user));
+
+                //  Item  user adaptation
+                TextView txt_nameUser = sheetView.findViewById(R.id.txt_nmUser_Sheet);
+                CardView container_shoppingAmount = sheetView.findViewById(R.id.base_QuantityItemsCart_sheet);
+                TextView txt_QuantityCart_sheet = sheetView.findViewById(R.id.txt_QuantityCart_sheet);
+
+                txt_nameUser.setText(getString(R.string.hello) + " " + name_user);
+
+                if (cardSize != 0){
+                    container_shoppingAmount.setVisibility(View.VISIBLE);
+                    CartAnim = AnimationUtils.loadAnimation(getApplicationContext(),R.anim.cart_size_animation);
+                    container_shoppingAmount.setAnimation(CartAnim);
+                    txt_QuantityCart_sheet.setText(cardSize + "");
+                }else
+                    container_shoppingAmount.setVisibility(View.GONE);
+
+                if (img_user == null || img_user.equals(""))
+                    Log.d("UserStatus", "Not User image");
+                else
+                    Picasso.get().load(img_user).into( (CircleImageView) sheetView.findViewById(R.id.icon_ProfileUser_sheetMenu));
+
+                //  Interactive items
+                ConstraintLayout btn_user_profile_sheet = sheetView.findViewById(R.id.btn_user_profile_sheet);
+                CardView BtnFountainsSheetUserMenu = sheetView.findViewById(R.id.BtnFountainsSheetUserMenu);
+                ConstraintLayout BtnMyShoppingCartSheetMenu = sheetView.findViewById(R.id.BtnMyShoppingCartSheetMenu);
+                CardView BtnMyCardsSheetUserMenu = sheetView.findViewById(R.id.BtnMyCardsSheetUserMenu);
+                CardView BtnMyOrdersSheetUserMenu = sheetView.findViewById(R.id.BtnMyOrdersSheetUserMenu);
+
+                btn_user_profile_sheet.setOnClickListener(v1 -> {
+                    OpenProfile();
+                    bottomSheetDialog.dismiss();
+                });
+
+                BtnFountainsSheetUserMenu.setOnClickListener(v1 -> {
+                    OpenFountain();
+                    bottomSheetDialog.dismiss();
+                });
+
+                BtnMyShoppingCartSheetMenu.setOnClickListener(v1 -> {
+                    OpenShoppingCart();
+                    bottomSheetDialog.dismiss();
+                });
+
+                BtnMyCardsSheetUserMenu.setOnClickListener(v1 -> {
+                    OpenShoppingCart();
+                    bottomSheetDialog.dismiss();
+                });
+
+                BtnMyOrdersSheetUserMenu.setOnClickListener(v1 -> {
+                    OpenMyOrders();
+                    bottomSheetDialog.dismiss();
+                });
+
+                bottomSheetDialog.setContentView(sheetView);
+                bottomSheetDialog.show();
+            }else
+                Warnings.NeedLoginAlert(MainActivity.this);
+        });
+    }
+
+    public final void OpenProfile() {
+        if (_IdUser != 0){
+            getWindow().setNavigationBarColor(getColor(R.color.background_top));
+            Intent goTo_profile = new Intent(MainActivity.this, ProfileActivity.class);
+            goTo_profile.putExtra("id_user", _IdUser);
+            goTo_profile.putExtra("name_user", name_user);
+            goTo_profile.putExtra("email_user", _Email);
+            goTo_profile.putExtra("cpf_user", cpf_user);
+            goTo_profile.putExtra("address_user", address_user);
+            goTo_profile.putExtra("complement", complement);
+            goTo_profile.putExtra("zipcode", zipcode);
+            goTo_profile.putExtra("phone_user", phone_user);
+            goTo_profile.putExtra("birth_date", birth_date);
+            goTo_profile.putExtra("img_user", img_user);
+            goTo_profile.putExtra("password", _Password);
+            startActivity(goTo_profile);
+        }else
+            Warnings.NeedLoginAlert(MainActivity.this);
+    }
+
+    public final void OpenFountain() {
+        if (_IdUser != 0){
+        Intent goTo_DevicePresentation = new Intent(this, DevicePresentationActivity.class);
+        startActivity(goTo_DevicePresentation);
+        }else
+            Warnings.NeedLoginAlert(MainActivity.this);
+    }
+
+    public final void OpenServices() {
+        ServicesFragment servicesFragment = new ServicesFragment();
+        args = new Bundle();
+        args.putInt("id_user", _IdUser);
+        servicesFragment.setArguments(args);
+        transaction = getSupportFragmentManager().beginTransaction();
+        transaction.replace(R.id.frameLayoutMain, servicesFragment);
+        transaction.commit();
+    }
+
+    public final void OpenAllProducts() {
+        AllProductsFragment allProductsFragment = new AllProductsFragment();
+        args = new Bundle();
+        args.putInt("id_user", _IdUser);
+        args.putString("search", null);
+        allProductsFragment.setArguments(args);
+        transaction = getSupportFragmentManager().beginTransaction();
+        transaction.replace(R.id.frameLayoutMain, allProductsFragment);
+        transaction.commit();
+    }
+
+    public final void OpenShoppingCart() {
+        if (_IdUser != 0){
+            ShoppingCartFragment shoppingCartFragment = new ShoppingCartFragment();
+            args = new Bundle();
+            args.putString("email_user", _Email);
+            args.putInt("id_user", _IdUser);
+            shoppingCartFragment.setArguments(args);
+            transaction = getSupportFragmentManager().beginTransaction();
+            transaction.replace(R.id.frameLayoutMain, shoppingCartFragment);
+            transaction.commit();
+        }else
+            Warnings.NeedLoginAlert(MainActivity.this);
+    }
+
+    public static MainActivity getInstance() {
+        return instance;
     }
 
     private void ShowAddressAlert(){
@@ -367,6 +551,7 @@ public class MainActivity extends AppCompatActivity {
 
     public DtoUser GetUserBaseInformation(){
         DtoUser dtoUser = new DtoUser();
+        dtoUser.setName_user(name_user);
         dtoUser.setEmail(_Email);
         dtoUser.setPassword(_Password);
         dtoUser.setCpf_user(cpf_user);
@@ -440,40 +625,63 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void GetUserInformation() {
-        UserServices usersService = retrofitUser.create(UserServices.class);
-        DtoUser dtoUser = new DtoUser(_Email, _Password);
-        Call<DtoUser> resultLogin = usersService.loginUser(dtoUser);
-        resultLogin.enqueue(new Callback<DtoUser>() {
-            @Override
-            public void onResponse(@NonNull Call<DtoUser> call, @NonNull Response<DtoUser> response) {
-                if (response.code() == 200) {
-                    assert response.body() != null;
-                    _IdUser = response.body().getId_user();
-                    name_user = response.body().getName_user();
-                    _Email = response.body().getEmail();
-                    cpf_user = response.body().getCpf_user();
-                    address_user = response.body().getAddress_user();
-                    complement = response.body().getComplement();
-                    zipcode = response.body().getZipcode();
-                    phone_user = response.body().getPhone_user();
-                    birth_date = response.body().getBirth_date();
-                    img_user = response.body().getImg_user();
-                    if (img_user == null || img_user.equals(""))
-                        Log.d("UserStatus", "Not User image");
-                    else
-                        Picasso.get().load(img_user).into(icon_ProfileUser_main);
-                }else if (response.code() == 401){
-                    Toast.makeText(MainActivity.this, getString(R.string.we_verify_yourEmailOrPassword), Toast.LENGTH_LONG).show();
-                    Intent goTo_login = new Intent(MainActivity.this, LoginActivity.class);
-                    startActivity(goTo_login);
-                    finish();
+        if (_IdUser != 0){
+            UserServices usersService = retrofitUser.create(UserServices.class);
+            DtoUser dtoUser = new DtoUser(_Email, _Password);
+            Call<DtoUser> resultLogin = usersService.loginUser(dtoUser);
+            resultLogin.enqueue(new Callback<DtoUser>() {
+                @Override
+                public void onResponse(@NonNull Call<DtoUser> call, @NonNull Response<DtoUser> response) {
+                    if (response.code() == 200) {
+                        assert response.body() != null;
+                        _IdUser = response.body().getId_user();
+                        name_user = response.body().getName_user();
+                        _Email = response.body().getEmail();
+                        cpf_user = response.body().getCpf_user();
+                        address_user = response.body().getAddress_user();
+                        complement = response.body().getComplement();
+                        zipcode = response.body().getZipcode();
+                        phone_user = response.body().getPhone_user();
+                        birth_date = response.body().getBirth_date();
+                        if (!response.body().getImg_user().equals(img_user)){
+                            img_user = response.body().getImg_user();
+                            if (img_user == null || img_user.equals(""))
+                                Log.d("UserStatus", "Not User image");
+                            else
+                                Picasso.get().load(img_user).into(icon_ProfileUser_main);
+                        }
+                        TryUpdatePreferences();
+                    }else if (response.code() == 401){
+                        Toast.makeText(MainActivity.this, getString(R.string.we_verify_yourEmailOrPassword), Toast.LENGTH_LONG).show();
+                        Intent goTo_login = new Intent(MainActivity.this, LoginActivity.class);
+                        startActivity(goTo_login);
+                        finish();
+                    }
                 }
-            }
-            @Override
-            public void onFailure(@NonNull Call<DtoUser> call, @NonNull Throwable t) {
-                Log.d("UserStatus", "Error to get user information on main\n" + t.getMessage());
-            }
-        });
+                @Override
+                public void onFailure(@NonNull Call<DtoUser> call, @NonNull Throwable t) {
+                    Log.d("UserStatus", "Error to get user information on main\n" + t.getMessage());
+                }
+            });
+        }
+    }
+
+    private void TryUpdatePreferences() {
+        SharedPreferences sp = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        if (sp.contains("pref_email") && sp.contains("pref_password")){
+            mPrefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+            SharedPreferences.Editor editor = mPrefs.edit();
+            editor.putString("pref_name_user", name_user);
+            editor.putInt("pref_id_user", _IdUser);
+            editor.putString("pref_cpf_user", cpf_user);
+            editor.putString("pref_address_user", address_user);
+            editor.putString("pref_complement", complement);
+            editor.putString("pref_zipcode", zipcode);
+            editor.putString("pref_birth_date", birth_date);
+            editor.putString("pref_phone_user", phone_user);
+            editor.putString("pref_img_user", img_user);
+            editor.apply();
+        }
     }
 
     @Override public void onBackPressed() {
