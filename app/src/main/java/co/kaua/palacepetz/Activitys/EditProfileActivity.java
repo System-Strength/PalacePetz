@@ -19,7 +19,6 @@ import android.util.Log;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.airbnb.lottie.LottieAnimationView;
 import com.google.firebase.storage.StorageReference;
@@ -34,7 +33,8 @@ import co.kaua.palacepetz.Adapters.LoadingDialog;
 import co.kaua.palacepetz.Adapters.Warnings;
 import co.kaua.palacepetz.Data.User.DtoUser;
 import co.kaua.palacepetz.Data.User.UserServices;
-import co.kaua.palacepetz.Methods.Userpermissions;
+import co.kaua.palacepetz.Methods.ToastHelper;
+import co.kaua.palacepetz.Methods.UserPermissions;
 import co.kaua.palacepetz.Firebase.ConfFirebase;
 import co.kaua.palacepetz.Methods.MaskEditUtil;
 import co.kaua.palacepetz.R;
@@ -47,6 +47,13 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 import static co.kaua.palacepetz.Methods.ValidateCPF.isValidCPF;
+
+/**
+ *  Copyright (c) 2021 Kauã Vitório
+ *  Official repository https://github.com/Kauavitorio/PalacePetz
+ *  Responsible developer: https://github.com/Kauavitorio
+ *  @author Kaua Vitorio
+ **/
 
 public class EditProfileActivity extends AppCompatActivity {
     private TextView txt_userName_EditProfile, txt_email_EditProfile;
@@ -113,7 +120,7 @@ public class EditProfileActivity extends AppCompatActivity {
         editProfile__birth_dateUser.addTextChangedListener(MaskEditUtil.mask(editProfile__birth_dateUser, MaskEditUtil.FORMAT_DATE));
 
         icon_ProfileUser_EditProfile.setOnClickListener(v -> {
-            Userpermissions.validatePermissions(permissions, EditProfileActivity.this, 1);
+            UserPermissions.validatePermissions(permissions, EditProfileActivity.this, 1);
             int GalleryPermission = ContextCompat.checkSelfPermission(EditProfileActivity.this, Manifest.permission.READ_EXTERNAL_STORAGE);
             if (GalleryPermission == PackageManager.PERMISSION_GRANTED)
                 OpenGallery();
@@ -171,7 +178,7 @@ public class EditProfileActivity extends AppCompatActivity {
                     storageReference .putFile(filePath).continueWithTask(task -> {
                         if (!task.isSuccessful()) {
                             loadingDialog.dimissDialog();
-                            Toast.makeText(EditProfileActivity.this, R.string.couldnt_insert , Toast.LENGTH_SHORT).show();
+                            ToastHelper.toast(EditProfileActivity.this, getString(R.string.couldnt_insert));
                             Log.d("ProfileUpload", Objects.requireNonNull(task.getException()).toString());
                         }
                         return storageReference .getDownloadUrl();
@@ -181,15 +188,14 @@ public class EditProfileActivity extends AppCompatActivity {
                             img_user = downloadUri+"";
                             UpdateUserImage(id_user, img_user);
                         } else {
-                            Toast.makeText(this, getString(R.string.uploadFailed), Toast.LENGTH_SHORT).show();
+                            ToastHelper.toast(EditProfileActivity.this, getString(R.string.uploadFailed));
                             Log.d("ProfileUpload", Objects.requireNonNull(task.getException()).getMessage());
                             loadingDialog.dimissDialog();
                         }
                     });
                 }
-                else {
-                    Toast.makeText(EditProfileActivity.this, R.string.select_an_image, Toast.LENGTH_SHORT).show();
-                }
+                else
+                    ToastHelper.toast(EditProfileActivity.this, getString(R.string.select_an_image));
             } catch (Exception ex) {
                 Warnings.showWeHaveAProblem(EditProfileActivity.this);
                 Log.d("ProfileUpload", ex.toString());
@@ -288,14 +294,14 @@ public class EditProfileActivity extends AppCompatActivity {
         userCall.enqueue(new Callback<DtoUser>() {
             @Override
             public void onResponse(@NonNull Call<DtoUser> call, @NonNull Response<DtoUser> response) {
+                loadingDialog.dimissDialog();
                 if (response.code() == 200){
-                    loadingDialog.dimissDialog();
                     Picasso.get().load(img_user).into(icon_ProfileUser_EditProfile);
                     GoBackToProfile();
-                }else{
-                    loadingDialog.dimissDialog();
+                }else if(response.code() == 406)
+                    Warnings.show_BadUsername_Warning(EditProfileActivity.this);
+                else
                     Warnings.showWeHaveAProblem(EditProfileActivity.this);
-                }
             }
             @Override
             public void onFailure(@NonNull Call<DtoUser> call, @NonNull Throwable t) {

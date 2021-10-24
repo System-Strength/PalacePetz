@@ -13,7 +13,6 @@ import android.os.Bundle;
 import android.util.Log;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -25,8 +24,16 @@ import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import java.util.List;
 import co.kaua.palacepetz.Data.User.DtoUser;
+import co.kaua.palacepetz.Methods.ToastHelper;
 import co.kaua.palacepetz.R;
 import co.kaua.palacepetz.databinding.ActivityFollowOrderBinding;
+
+/**
+ *  Copyright (c) 2021 Kauã Vitório
+ *  Official repository https://github.com/Kauavitorio/PalacePetz
+ *  Responsible developer: https://github.com/Kauavitorio
+ *  @author Kaua Vitorio
+ **/
 
 @SuppressWarnings("ALL")
 public class FollowOrderActivity extends FragmentActivity implements OnMapReadyCallback {
@@ -94,10 +101,10 @@ public class FollowOrderActivity extends FragmentActivity implements OnMapReadyC
 
     private void changeStatusBar() {
         switch (status) {
-            case "Aguardando aprovação":
+            case "Aguardando Aprovação":
                 _progress_state01.setProgress(100);
                 break;
-            case "Preparando produto":
+            case "Preparando Produto":
                 _progress_state01.setProgress(100);
                 _progress_state02.setProgress(100);
                 break;
@@ -112,14 +119,16 @@ public class FollowOrderActivity extends FragmentActivity implements OnMapReadyC
                 _progress_state03.setProgress(100);
                 _progress_state04.setProgress(100);
                 _progress_state05.setProgress(100);
+                txt_deliveryForecast.setText(getString(R.string.delivered));
                 break;
-            case "Concluido":
+            case "Concluído":
                 _progress_state01.setProgress(100);
                 _progress_state02.setProgress(100);
                 _progress_state03.setProgress(100);
                 _progress_state04.setProgress(100);
                 _progress_state05.setProgress(100);
                 _progress_state06.setProgress(100);
+                txt_deliveryForecast.setText(getString(R.string.delivered));
                 txt_OrderCode.setText(getString(R.string.order) + ": #" + cd_order + " (OK)");
                 break;
         }
@@ -149,13 +158,12 @@ public class FollowOrderActivity extends FragmentActivity implements OnMapReadyC
                         address.getLatitude(), address.getLongitude());
                 latitude = address.getLatitude();
                 longitude = address.getLongitude();
-            } else {
+            } else
                 // Display appropriate message when Geocoder services are not available
-                Toast.makeText(this, getString(R.string.zipCode_is_invalid), Toast.LENGTH_SHORT).show();
-            }
+                ToastHelper.toast(FollowOrderActivity.this, getString(R.string.zipCode_is_invalid));
         } catch (Exception e) {
             // handle exception
-            Toast.makeText(this, getString(R.string.error_in_get_your_address), Toast.LENGTH_SHORT).show();
+            ToastHelper.toast(FollowOrderActivity.this, getString(R.string.error_in_get_your_address));
             Log.d("AddressUpdate", e.toString());
         }
     }

@@ -8,19 +8,30 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.EditText;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.cardview.widget.CardView;
 
 import com.google.android.material.bottomsheet.BottomSheetDialog;
+
+import co.kaua.palacepetz.Activitys.Developers;
+import co.kaua.palacepetz.Activitys.Help.HelpActivity;
 import co.kaua.palacepetz.Activitys.LoginActivity;
 import co.kaua.palacepetz.Activitys.MainActivity;
 import co.kaua.palacepetz.Activitys.Pets.AllPetsActivity;
 import co.kaua.palacepetz.Activitys.RegisterAddressActivity;
+import co.kaua.palacepetz.Activitys.Services.ScheduledServicesActivity;
+import co.kaua.palacepetz.Activitys.SplashScreen;
 import co.kaua.palacepetz.Data.Pets.DtoPets;
 import co.kaua.palacepetz.Data.Pets.PetsServices;
+import co.kaua.palacepetz.Data.Schedule.DtoSchedule;
+import co.kaua.palacepetz.Data.Schedule.ScheduleServices;
+import co.kaua.palacepetz.Data.User.DtoUser;
+import co.kaua.palacepetz.Methods.ToastHelper;
 import co.kaua.palacepetz.R;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -30,8 +41,8 @@ import retrofit2.converter.gson.GsonConverterFactory;
 
 @SuppressWarnings("FieldCanBeLocal")
 public class Warnings extends MainActivity {
-    private static Dialog WarningError, Warning_Email_Password, warning_emailNotVerified, warning_emailSend,
-            warning_badUsername, OrderConfirmation, LogOutDialog, EmployeeWarning, warning_badPetName, PetWarning, NeedLoginWarning;
+    private static Dialog WarningError, Warning_Email_Password,
+            warning_badUsername, LogOutDialog, EmployeeWarning, warning_badPetName, PetWarning, NeedLoginWarning;
     @SuppressLint("StaticFieldLeak")
     private static LoadingDialog loadingDialog;
 
@@ -73,37 +84,39 @@ public class Warnings extends MainActivity {
     }
 
     //  Create Method for show alert of email not verified
-    public static void showEmailIsNotVerified(Context context) {
-        warning_emailNotVerified = new Dialog(context);
+    public static void showEmailIsNotVerified(Activity context) {
+        BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(context, R.style.BottomSheetTheme);
+        //  Creating View for SheetMenu
+        View sheetView = LayoutInflater.from(context).inflate(R.layout.adapter_emailnotverified,
+                context.findViewById(R.id.sheet_email_not_verified));
 
-        CardView btnIWillConfirmLogin;
-        warning_emailNotVerified.setContentView(R.layout.adapter_emailnotverified);
-        warning_emailNotVerified.setCancelable(false);
-        warning_emailNotVerified.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-        btnIWillConfirmLogin = warning_emailNotVerified.findViewById(R.id.btnIwillConfirmLogin);
+        sheetView.findViewById(R.id.btnOk_WillConfirm).setOnClickListener(v -> bottomSheetDialog.dismiss());
 
 
-        btnIWillConfirmLogin.setOnClickListener(v -> warning_emailNotVerified.dismiss());
-        warning_emailNotVerified.show();
+        bottomSheetDialog.setContentView(sheetView);
+        bottomSheetDialog.show();
     }
 
     //  Create Method for show alert of email send
     public static void show_WeSendEmail_Warning(Activity activity, String email, String password){
-        warning_emailSend = new Dialog(activity);
-        CardView btnIWillConfirm;
-        warning_emailSend.setContentView(R.layout.adapter_wesendemail);
-        warning_emailSend.setCancelable(false);
-        btnIWillConfirm = warning_emailSend.findViewById(R.id.btnIWillConfirm);
-        warning_emailSend.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(activity, R.style.BottomSheetTheme);
+        //  Creating View for SheetMenu
+        bottomSheetDialog.setCancelable(false);
+        View sheetView = LayoutInflater.from(activity).inflate(R.layout.adapter_wesendemail,
+                activity.findViewById(R.id.sheet_wesendemail_menu));
 
-        btnIWillConfirm.setOnClickListener(v -> {
+        sheetView.findViewById(R.id.btnIWillConfirm_mainSheet).setOnClickListener(v -> {
             Intent goTo_SingIn = new Intent(activity, LoginActivity.class);
             goTo_SingIn.putExtra("email_user", email);
             goTo_SingIn.putExtra("password_user", password);
             activity.startActivity(goTo_SingIn);
             activity.finish();
+            bottomSheetDialog.dismiss();
         });
-        warning_emailSend.show();
+
+
+        bottomSheetDialog.setContentView(sheetView);
+        bottomSheetDialog.show();
     }
 
     //  Create Method for show alert of bad username
@@ -154,21 +167,6 @@ public class Warnings extends MainActivity {
         btn_registerLatter_purchase.setOnClickListener(v -> dialog.dismiss());
 
         dialog.show();
-    }
-
-    public static void showOrderConfirmation(Context context){
-        OrderConfirmation = new Dialog(context);
-
-        CardView btnOk_OrderConfirmation;
-        OrderConfirmation.setContentView(R.layout.adapter_order_confirm);
-        OrderConfirmation.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-        btnOk_OrderConfirmation = OrderConfirmation.findViewById(R.id.btnOk_OrderConfirmation);
-        btnOk_OrderConfirmation.setElevation(10);
-        OrderConfirmation.setCancelable(false);
-
-        btnOk_OrderConfirmation.setOnClickListener(v -> OrderConfirmation.dismiss());
-
-        OrderConfirmation.show();
     }
 
     //  Create Show Logout Message
@@ -291,36 +289,25 @@ public class Warnings extends MainActivity {
 
     //  Create Show Need Login Message
     public static void NeedLoginAlert(Activity context) {
-        NeedLoginWarning = new Dialog(context);
-        SharedPreferences mPrefs;
-        mPrefs = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(context, R.style.BottomSheetTheme);
+        //  Creating View for SheetMenu
+        View sheetView = LayoutInflater.from(context).inflate(R.layout.adapter_needlogin_sheet,
+                context.findViewById(R.id.sheet_need_login_menu));
 
-        TextView txtMsg_alert, txtPositiveBtn_alert, txtCancel_alert;
-        CardView PositiveBtn_alert;
-        NeedLoginWarning.setContentView(R.layout.adapter_comum_alert);
-        NeedLoginWarning.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
-        txtMsg_alert = NeedLoginWarning.findViewById(R.id.txtMsg_alert);
-        txtCancel_alert = NeedLoginWarning.findViewById(R.id.txtCancel_alert);
-        PositiveBtn_alert = NeedLoginWarning.findViewById(R.id.PositiveBtn_alert);
-        txtPositiveBtn_alert = NeedLoginWarning.findViewById(R.id.txtPositiveBtn_alert);
-        PositiveBtn_alert.setElevation(20);
-
-        txtMsg_alert.setText(context.getString(R.string.need_login_msg));
-        txtCancel_alert.setText(context.getString(R.string.no));
-        txtPositiveBtn_alert.setText(context.getString(R.string.yes));
-
-        PositiveBtn_alert.setOnClickListener(v -> {
-            PositiveBtn_alert.setElevation(0);
+        sheetView.findViewById(R.id.btn_loginYes_now).setOnClickListener(v -> {
+            SharedPreferences mPrefs;
+            mPrefs = context.getSharedPreferences("myPrefs", MODE_PRIVATE);
             mPrefs.edit().clear().apply();
             Intent login = new Intent(context, LoginActivity.class);
             context.startActivity(login);
             context.finish();
-            NeedLoginWarning.dismiss();
+            bottomSheetDialog.dismiss();
         });
 
-        txtCancel_alert.setOnClickListener(c -> NeedLoginWarning.dismiss());
+        sheetView.findViewById(R.id.btn_loginNo_later).setOnClickListener(v -> bottomSheetDialog.dismiss());
 
-        NeedLoginWarning.show();
+        bottomSheetDialog.setContentView(sheetView);
+        bottomSheetDialog.show();
     }
 
     //  Create Show Need Login Message but with shortCut
@@ -427,5 +414,179 @@ public class Warnings extends MainActivity {
         PositiveBtn_alert.setOnClickListener(v -> WarningError.dismiss());
 
         WarningError.show();
+    }
+
+    public static void showScheduleIsSuccessful(Activity activity) {
+        BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(activity, R.style.BottomSheetTheme);
+        //  Creating View for SheetMenu
+        View sheetView = LayoutInflater.from(activity).inflate(R.layout.adapter_schedule_confirm,
+                activity.findViewById(R.id.sheet_schedule_confirm));
+        sheetView.findViewById(R.id.btnOk_OrderConfirmation).setOnClickListener(v -> bottomSheetDialog.dismiss());
+        bottomSheetDialog.setContentView(sheetView);
+        bottomSheetDialog.show();
+    }
+
+    //  Cancel Schedule dialog
+    public static void CancelSchedule(Context context, int cd_schedule) {
+        LogOutDialog = new Dialog(context);
+        DtoUser user = MainActivity.getInstance().GetUserBaseInformation();
+        DtoSchedule schedule = new DtoSchedule(user.getId_user(), cd_schedule);
+
+        TextView txtMsg_alert, txtPositiveBtn_alert, txtCancel_alert;
+        CardView PositiveBtn_alert;
+        LogOutDialog.setContentView(R.layout.adapter_comum_alert);
+        LogOutDialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        txtMsg_alert = LogOutDialog.findViewById(R.id.txtMsg_alert);
+        txtCancel_alert = LogOutDialog.findViewById(R.id.txtCancel_alert);
+        PositiveBtn_alert = LogOutDialog.findViewById(R.id.PositiveBtn_alert);
+        txtPositiveBtn_alert = LogOutDialog.findViewById(R.id.txtPositiveBtn_alert);
+        txtMsg_alert.setText(context.getString(R.string.really_want_cancel_this_schedule));
+        txtPositiveBtn_alert.setText(context.getString(R.string.yes));
+
+        PositiveBtn_alert.setOnClickListener(v -> {
+            LogOutDialog.dismiss();
+            BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(context, R.style.BottomSheetTheme);
+            //  Creating View for SheetMenu
+            View sheetView = LayoutInflater.from(context).inflate(R.layout.adapter_menu_sheet_cancel_schedule_reason,
+                    ((Activity) context).findViewById(R.id.sheet_menu_cancel_schedule_reason));
+
+            sheetView.findViewById(R.id.btn_card_unavailable_for_the_day).setOnClickListener(v2 -> {
+                bottomSheetDialog.dismiss();
+                schedule.setDescription(context.getString(R.string.i_will_be_unavailable_for_the_day));
+                Action_CancelSchedule(context, schedule);
+            });
+
+            sheetView.findViewById(R.id.btn_card_i_cant_go_at_the_scheduled_time).setOnClickListener(v2 -> {
+                bottomSheetDialog.dismiss();
+                schedule.setDescription(context.getString(R.string.i_cant_go_at_the_scheduled_time));
+                Action_CancelSchedule(context, schedule);
+            });
+
+            sheetView.findViewById(R.id.btn_card_other_reasons).setOnClickListener(v2 -> {
+                bottomSheetDialog.dismiss();
+                //  Create Desc SheetMenu
+                BottomSheetDialog bottomSheetDialog_Desc = new BottomSheetDialog(context, R.style.BottomSheetTheme);
+                View sheetView_Desc = LayoutInflater.from(context).inflate(R.layout.adapter_menu_sheet_cancel_schedule_other_reason,
+                        ((Activity) context).findViewById(R.id.sheet_menu_cancel_schedule_other_reason));
+                EditText editText_reason_desc = sheetView_Desc.findViewById(R.id.editText_reason_desc);
+
+                sheetView_Desc.findViewById(R.id.btn_confirm_cancel_desc).setOnClickListener(v1 -> {
+                    bottomSheetDialog_Desc.dismiss();
+                    String desc = editText_reason_desc.getText().toString().trim();
+                    if(desc.replace(" ", "").length() <= 0)
+                        schedule.setDescription("Motivo do cancelamento não foi informado.");
+                    else
+                        schedule.setDescription(desc);
+                    Action_CancelSchedule(context, schedule);
+                });
+
+                bottomSheetDialog_Desc.setContentView(sheetView_Desc);
+                bottomSheetDialog_Desc.show();
+            });
+
+
+            bottomSheetDialog.setContentView(sheetView);
+            bottomSheetDialog.show();
+
+        });
+
+        txtCancel_alert.setOnClickListener(v -> LogOutDialog.dismiss());
+
+        LogOutDialog.show();
+    }
+
+    private static void Action_CancelSchedule(Context context, @NonNull DtoSchedule schedule){
+        loadingDialog = new LoadingDialog((Activity) context);
+        loadingDialog.startLoading();
+        ScheduleServices services = retrofitUser.create(ScheduleServices.class);
+        Call<DtoSchedule> call = services.CancelSchedule(schedule.getCd_schedule(), schedule.getId_user(), schedule.getDescription());
+        call.enqueue(new Callback<DtoSchedule>() {
+            @Override
+            public void onResponse(@NonNull Call<DtoSchedule> call, @NonNull Response<DtoSchedule> response) {
+                loadingDialog.dimissDialog();
+                if(response.code() == 200) {
+                    ToastHelper.toast((Activity) context, context.getString(R.string.appointment_canceled_successfully));
+                    ScheduledServicesActivity.LoadSchedules();
+                }
+                else Warnings.showWeHaveAProblem(context);
+            }
+            @Override
+            public void onFailure(@NonNull Call<DtoSchedule> call, @NonNull Throwable t) {
+                loadingDialog.dimissDialog();
+                Warnings.showWeHaveAProblem(context);
+            }
+        });
+    }
+
+    public static void showAccountDisable(@NonNull Context context){
+        mPrefs = context.getSharedPreferences("myPrefs", MODE_PRIVATE);
+        mPrefs.edit().clear().apply();
+        BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(context, R.style.BottomSheetTheme);
+        //  Creating View for SheetMenu
+        View sheetView = LayoutInflater.from(context).inflate(R.layout.adapter_sheet_account_disable,
+                ((Activity)context).findViewById(R.id.sheet_account_disable));
+        sheetView.findViewById(R.id.btnOk_account_disable).setOnClickListener(v -> {
+            bottomSheetDialog.dismiss();
+        });
+        bottomSheetDialog.setContentView(sheetView);
+        bottomSheetDialog.show();
+    }
+
+    public static void showDevelopers(@NonNull Context context){
+        //  Get all SharedPreferences
+        mPrefs = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        SharedPreferences sp = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        if(sp.getInt("pref_developers", 0) == 0){
+            BottomSheetDialog bottomSheetDialog = new BottomSheetDialog(context, R.style.BottomSheetTheme);
+            //  Creating View for SheetMenu
+            bottomSheetDialog.setCancelable(false);
+            View sheetView = LayoutInflater.from(context).inflate(R.layout.adapter_sheet_developers,
+                    ((Activity)context).findViewById(R.id.sheet_developers));
+
+            sheetView.findViewById(R.id.btnOk_Developers).setOnClickListener(v -> {
+                bottomSheetDialog.dismiss();
+                ApplyDevelopersPref(context, 1);
+            });
+
+            sheetView.findViewById(R.id.btnDevelopers).setOnClickListener(v -> {
+                Intent i = new Intent(context, Developers.class);
+                context.startActivity(i);
+                bottomSheetDialog.dismiss();
+                ApplyDevelopersPref(context, 1);
+            });
+
+            bottomSheetDialog.setContentView(sheetView);
+            bottomSheetDialog.show();
+        }
+    }
+
+    //  Create Show Payment In the place
+    public static void PaymentInThePlace(Context context) {
+        WarningError = new Dialog(context);
+
+        TextView txtMsg_alert, txtPositiveBtn_alert, txtCancel_alert;
+        CardView PositiveBtn_alert;
+        WarningError.setContentView(R.layout.adapter_comum_alert);
+        WarningError.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        txtMsg_alert = WarningError.findViewById(R.id.txtMsg_alert);
+        txtCancel_alert = WarningError.findViewById(R.id.txtCancel_alert);
+        PositiveBtn_alert = WarningError.findViewById(R.id.PositiveBtn_alert);
+        txtPositiveBtn_alert = WarningError.findViewById(R.id.txtPositiveBtn_alert);
+        PositiveBtn_alert.setElevation(20);
+        txtCancel_alert.setVisibility(View.GONE);
+
+        txtMsg_alert.setText(context.getString(R.string.notice_payment_at_the_time));
+        txtPositiveBtn_alert.setText(context.getString(R.string.ok));
+
+        PositiveBtn_alert.setOnClickListener(v -> WarningError.dismiss());
+
+        WarningError.show();
+    }
+
+    public static void ApplyDevelopersPref(@NonNull Context context, int status){
+        mPrefs = context.getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        SharedPreferences.Editor editor = mPrefs.edit();
+        editor.putInt("pref_developers", status);
+        editor.apply();
     }
 }

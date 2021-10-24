@@ -15,7 +15,6 @@ import android.os.Handler;
 import android.util.Log;
 import android.widget.EditText;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.airbnb.lottie.LottieAnimationView;
 import com.google.firebase.storage.StorageReference;
@@ -28,7 +27,8 @@ import co.kaua.palacepetz.Adapters.LoadingDialog;
 import co.kaua.palacepetz.Adapters.Warnings;
 import co.kaua.palacepetz.Data.User.DtoUser;
 import co.kaua.palacepetz.Data.User.UserServices;
-import co.kaua.palacepetz.Methods.Userpermissions;
+import co.kaua.palacepetz.Methods.ToastHelper;
+import co.kaua.palacepetz.Methods.UserPermissions;
 
 import co.kaua.palacepetz.Firebase.ConfFirebase;
 import co.kaua.palacepetz.R;
@@ -90,7 +90,7 @@ public class ProfileActivity extends AppCompatActivity {
         loadUserInfo();
 
         icon_ProfileUser_profile.setOnClickListener(v -> {
-            Userpermissions.validatePermissions(permissions, ProfileActivity.this, 1);
+            UserPermissions.validatePermissions(permissions, ProfileActivity.this, 1);
             int GalleryPermission = ContextCompat.checkSelfPermission(ProfileActivity.this, Manifest.permission.READ_EXTERNAL_STORAGE);
             if (GalleryPermission == PackageManager.PERMISSION_GRANTED)
                 OpenGallery();
@@ -201,7 +201,7 @@ public class ProfileActivity extends AppCompatActivity {
                     storageReference .putFile(filePath).continueWithTask(task -> {
                         if (!task.isSuccessful()) {
                             loadingDialog.dimissDialog();
-                            Toast.makeText(ProfileActivity.this, R.string.couldnt_insert , Toast.LENGTH_SHORT).show();
+                            ToastHelper.toast(ProfileActivity.this, getString(R.string.couldnt_insert));
                             Log.d("ProfileUpload", Objects.requireNonNull(task.getException()).toString());
                         }
                         return storageReference .getDownloadUrl();
@@ -212,17 +212,16 @@ public class ProfileActivity extends AppCompatActivity {
                             Picasso.get().load(img_user).into(icon_ProfileUser_profile);
                             UpdateUserImage(id_user, img_user);
                         } else {
-                            Toast.makeText(this, getString(R.string.uploadFailed), Toast.LENGTH_SHORT).show();
+                            ToastHelper.toast(ProfileActivity.this, getString(R.string.uploadFailed));
                             Log.d("ProfileUpload", Objects.requireNonNull(task.getException()).getMessage());
                             loadingDialog.dimissDialog();
                         }
                     });
                 }
-                else {
-                    Toast.makeText(ProfileActivity.this, R.string.select_an_image, Toast.LENGTH_SHORT).show();
-                }
+                else
+                    ToastHelper.toast(ProfileActivity.this, getString(R.string.select_an_image));
             } catch (Exception ex) {
-                Toast.makeText(this, getString(R.string.weHaveAProblem), Toast.LENGTH_SHORT).show();
+                ToastHelper.toast(ProfileActivity.this, getString(R.string.weHaveAProblem));
                 Log.d("ProfileUpload", ex.toString());
             }
         }

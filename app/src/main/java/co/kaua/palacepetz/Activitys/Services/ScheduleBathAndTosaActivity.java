@@ -1,5 +1,6 @@
 package co.kaua.palacepetz.Activitys.Services;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
 import androidx.constraintlayout.widget.ConstraintLayout;
@@ -7,6 +8,7 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import android.annotation.SuppressLint;
 import android.app.DatePickerDialog;
 import android.app.TimePickerDialog;
+import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.AdapterView;
@@ -20,12 +22,27 @@ import com.airbnb.lottie.LottieAnimationView;
 
 import java.text.Format;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.Locale;
 
+import co.kaua.palacepetz.Activitys.MainActivity;
+import co.kaua.palacepetz.Adapters.LoadingDialog;
+import co.kaua.palacepetz.Adapters.Warnings;
+import co.kaua.palacepetz.Data.Pets.AsyncPets_SearchScheduleBath;
+import co.kaua.palacepetz.Data.Schedule.DtoSchedule;
+import co.kaua.palacepetz.Data.Schedule.ScheduleServices;
+import co.kaua.palacepetz.Data.User.DtoUser;
+import co.kaua.palacepetz.Methods.ToastHelper;
 import co.kaua.palacepetz.R;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 public class ScheduleBathAndTosaActivity extends AppCompatActivity {
     private ConstraintLayout ScheduleBath_time, ScheduleBath_date;
@@ -36,24 +53,40 @@ public class ScheduleBathAndTosaActivity extends AppCompatActivity {
     private TextView txt_scheduleBath_time, txt_scheduleBath_date;
     private final Calendar myCalendar = Calendar.getInstance();
     private static DatePickerDialog.OnDateSetListener date;
+    private final ArrayList<String> PetsSearch = new ArrayList<>();
+    private static ScheduleBathAndTosaActivity instance;
+    private LoadingDialog loadingDialog;
 
     //  Spinner Lists
     private static String[] UserPets, DeliveryMethod, PaymentFormList;
 
     //  Schedule Info
     private String PetSelected, DeliveryMethodSelected, TimeSelected, DateSelected, PaymentFormSelected, DescriptionInsert;
+    int payment_type, delivery_select;
+
+    private int _IdUser;
+
+    private final Retrofit retrofitSchedule = new Retrofit.Builder()
+            .baseUrl("https://palacepetzapi.herokuapp.com/")
+            .addConverterFactory(GsonConverterFactory.create())
+            .build();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_schedule_bath_and_tosa);
         Ids();
+        instance = this;
         UserPets = new String[]{ getString(R.string.select_your_pet) };
         DeliveryMethod = new String[]{ getString(R.string.WITHDRAWAL_DELIVERY), getString(R.string.optionOneDeliveryMethod),
                 getString(R.string.optionTwoDeliveryMethod), getString(R.string.optionThreeDeliveryMethod), getString(R.string.optionFourDeliveryMethod) };
-        PaymentFormList = new String[]{ getString(R.string.select_payment_method) };
+        PaymentFormList = new String[]{ getString(R.string.select_payment_method),
+                getString(R.string.debit), getString(R.string.credit), getString(R.string.money) };
+        DtoUser dtoUser = MainActivity.getInstance().GetUserBaseInformation();
+        _IdUser = dtoUser.getId_user();
         SetSpinnerAdapter();
         SetSpinnerSelected();
+        Warnings.PaymentInThePlace(ScheduleBathAndTosaActivity.this);
 
         //  Creating Calendar
         date = (view, year, month, dayOfMonth) -> {
@@ -64,17 +97,47 @@ public class ScheduleBathAndTosaActivity extends AppCompatActivity {
         };
 
         btnScheduleBath.setOnClickListener(v -> {
-            if (PetSelected == null || PetSelected.length() <= 0)
-                Toast.makeText(this, "Sem pet", Toast.LENGTH_SHORT).show();
+            DescriptionInsert = edit_Description_Bath.getText().toString().trim();
+            if(PetSelected == null || PetSelected.length() <= 0 || PetSelected.equals(getString(R.string.select_your_pet)))
+                ToastHelper.toast(this, getString(R.string.pet_is_not_selected));
             else if (DeliveryMethodSelected == null || DeliveryMethodSelected.length() <= 0)
-                Toast.makeText(this, "Sem deliv", Toast.LENGTH_SHORT).show();
-            else if (TimeSelected == null || TimeSelected.length() <= 0)
-                Toast.makeText(this, "Sem hora", Toast.LENGTH_SHORT).show();
-            else if (DateSelected == null || DateSelected.length() <= 0)
-                Toast.makeText(this, "Sem data", Toast.LENGTH_SHORT).show();
-            else if (PaymentFormSelected == null || PaymentFormSelected.length() <= 0)
-                Toast.makeText(this, "Sem Pay", Toast.LENGTH_SHORT).show();
-            DescriptionInsert = edit_Description_Bath.getText().toString();
+                ToastHelper.toast(this, getString(R.string.delivery_is_not_selected));
+            else if(TimeSelected == null || TimeSelected.length() <= 2)
+                ToastHelper.toast(this, getString(R.string.time_is_not_selected));
+            else if(DateSelected == null || DateSelected.length() <= 4)
+                ToastHelper.toast(this, getString(R.string.date_is_not_selected));
+            else if(PaymentFormSelected == null || PaymentFormSelected.length() <= 4 || PaymentFormSelected.equals(getString(R.string.select_payment_method)))
+                ToastHelper.toast(this, getString(R.string.date_is_not_selected));
+            else{
+                loadingDialog = new LoadingDialog(this);
+                loadingDialog.startLoading();
+                if (PaymentFormSelected.equals(getString(R.string.debit))) payment_type = 1;
+                else if (PaymentFormSelected.equals(getString(R.string.credit))) payment_type = 2;
+                else payment_type = 3;
+
+                DtoSchedule dtoSchedule = new DtoSchedule(_IdUser, PetSelected, TimeSelected, DateSelected, payment_type, 2, delivery_select, DescriptionInsert);
+                ScheduleServices services = retrofitSchedule.create(ScheduleServices.class);
+                Call<DtoSchedule> call = services.CreateSchedule(dtoSchedule);
+                call.enqueue(new Callback<DtoSchedule>() {
+                    @Override
+                    public void onResponse(@NonNull Call<DtoSchedule> call, @NonNull Response<DtoSchedule> response) {
+                        loadingDialog.dimissDialog();
+                        if(response.code() == 201){
+                            Intent servicesSchedule = new Intent(ScheduleBathAndTosaActivity.this, ScheduledServicesActivity.class);
+                            servicesSchedule.putExtra("id_user", _IdUser);
+                            servicesSchedule.putExtra("now", true);
+                            startActivity(servicesSchedule);
+                            finish();
+                        }else
+                            Warnings.showWeHaveAProblem(ScheduleBathAndTosaActivity.this);
+                    }
+                    @Override
+                    public void onFailure(@NonNull Call<DtoSchedule> call, @NonNull Throwable t) {
+                        loadingDialog.dimissDialog();
+                        Warnings.showWeHaveAProblem(ScheduleBathAndTosaActivity.this);
+                    }
+                });
+            }
         });
 
         arrowGoBack_ScheduleBath.setOnClickListener(v -> finish());
@@ -82,6 +145,15 @@ public class ScheduleBathAndTosaActivity extends AppCompatActivity {
         ScheduleBath_time.setOnClickListener(v -> ShowTimerDialog());
 
         ScheduleBath_date.setOnClickListener(v -> ShowCalendar());
+    }
+
+    @SuppressLint("UseCompatLoadingForDrawables")
+    public void UpdateSearch(@NonNull ArrayList<String> list){
+        PetsSearch.clear();
+        PetsSearch.addAll(Arrays.asList(UserPets));
+        PetsSearch.addAll(list);
+        spinner_animalBath.setPopupBackgroundDrawable(getDrawable(R.drawable.background_adapter_pets));
+        spinner_animalBath.setAdapter(new ArrayAdapter<>(ScheduleBathAndTosaActivity.this, android.R.layout.simple_list_item_1, PetsSearch));
     }
 
     private void SetSpinnerSelected() {
@@ -112,6 +184,14 @@ public class ScheduleBathAndTosaActivity extends AppCompatActivity {
                     btnLayoutSpinnerDeliveryMethod.setVisibility(View.VISIBLE);
                 }else{
                     DeliveryMethodSelected = ItemSelect;
+                    if(DeliveryMethodSelected.equals(getString(R.string.optionOneDeliveryMethod)))
+                        delivery_select = 1;
+                    else if(DeliveryMethodSelected.equals(getString(R.string.optionTwoDeliveryMethod)))
+                        delivery_select = 2;
+                    else if(DeliveryMethodSelected.equals(getString(R.string.optionThreeDeliveryMethod)))
+                        delivery_select = 3;
+                    else if(DeliveryMethodSelected.equals(getString(R.string.optionFourDeliveryMethod)))
+                        delivery_select = 4;
                     btnLayoutSpinnerDeliveryMethod.setVisibility(View.GONE);
                 }
             }
@@ -152,10 +232,14 @@ public class ScheduleBathAndTosaActivity extends AppCompatActivity {
         btnLayoutSpinnerDeliveryMethod = findViewById(R.id.btnLayoutSpinnerDeliveryMethod);
     }
 
+    public static ScheduleBathAndTosaActivity getInstance() { return instance; }
+
+    @SuppressWarnings("unchecked")
     private void SetSpinnerAdapter() {
         //  Set User pet spinner Adapter
-        ArrayAdapter<String> adapterUserPet = new ArrayAdapter<>(ScheduleBathAndTosaActivity.this, android.R.layout.simple_spinner_dropdown_item, UserPets);
-        spinner_animalBath.setAdapter(adapterUserPet);
+        AsyncPets_SearchScheduleBath asyncPets = new AsyncPets_SearchScheduleBath(_IdUser, ScheduleBathAndTosaActivity.this);
+        asyncPets.execute();
+
         //  Set VeterinaryList spinner Adapter
         ArrayAdapter<String> adapterDeliveryMethod = new ArrayAdapter<>(ScheduleBathAndTosaActivity.this, android.R.layout.simple_spinner_dropdown_item, DeliveryMethod);
         spinner_DeliveryMethod.setAdapter(adapterDeliveryMethod);

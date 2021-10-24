@@ -22,6 +22,7 @@ import com.google.firebase.auth.FirebaseAuth;
 
 import java.util.Arrays;
 
+import co.kaua.palacepetz.Adapters.Warnings;
 import co.kaua.palacepetz.Data.mobile.DtoVersion;
 import co.kaua.palacepetz.Data.mobile.MobileServices;
 import co.kaua.palacepetz.Firebase.ConfFirebase;
@@ -32,15 +33,18 @@ import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
+/**
+ *  Copyright (c) 2021 Kauã Vitório
+ *  Official repository https://github.com/Kauavitorio/PalacePetz
+ *  Responsible developer: https://github.com/Kauavitorio
+ *  @author Kaua Vitorio
+ **/
+
 public class SplashScreen extends AppCompatActivity {
     ConstraintLayout base_animation_splash;
 
     //  Create timer
     private final Handler timer = new Handler();
-
-    //  Set preferences
-    SharedPreferences mPrefs;
-    private static final String PREFS_NAME = "myPrefs";
 
     final String email = "usermobile@palacepetz.com";
     final String password = "mobile123456";
@@ -53,13 +57,15 @@ public class SplashScreen extends AppCompatActivity {
             .addConverterFactory(GsonConverterFactory.create())
             .build();
 
-    @RequiresApi(api = Build.VERSION_CODES.N_MR1)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_splash_screen);
         base_animation_splash = findViewById(R.id.base_animation_splash);
-        launchShortcuts();
+
+        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.N_MR1)
+            launchShortcuts();
+
         StartApi();
 
         //  Set Containers on Screen
@@ -121,6 +127,8 @@ public class SplashScreen extends AppCompatActivity {
             timer.postDelayed(this::GoToMain, MAIN_TIMER);
         else
             timer.postDelayed(this::GoToIntro, 2000);
+
+        Warnings.ApplyDevelopersPref(SplashScreen.this, 0);
     }
 
     private void GoToMain(){

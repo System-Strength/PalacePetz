@@ -20,11 +20,14 @@
             android:layout_height="wrap_content"
             android:minHeight="80dp">
 
+            <!-- Edit Search -->
             <AutoCompleteTextView
                 android:id="@+id/edit_Search_Main"
                 android:layout_width="300dp"
                 android:layout_height="51dp"
                 android:hint="@string/search_with_dots"
+                android:scrollbarSize="4dp"
+                android:scrollbarThumbVertical="@drawable/custom_scroll_style_vertical"
                 android:drawableEnd="@drawable/ic_search"
                 android:background="@drawable/bg_edittext_search_main"
                 android:imeOptions="actionSearch"
@@ -34,7 +37,6 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent"
                 tools:ignore="Autofill" />
-
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 
@@ -281,7 +283,7 @@
 
         </HorizontalScrollView>
 
-        <!-- Text ShortCut -->
+        <!-- Text Highlights -->
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -305,7 +307,8 @@
             android:id="@+id/RecyclerPopularProducts"
             android:layout_width="wrap_content"
             android:layout_gravity="center_horizontal"
-            android:layout_height="wrap_content"/>
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"/>
 
     </LinearLayout>
 

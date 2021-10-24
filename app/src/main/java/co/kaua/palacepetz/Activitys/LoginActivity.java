@@ -6,27 +6,27 @@ import androidx.cardview.widget.CardView;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.ActivityOptionsCompat;
 
+import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
-import android.util.Patterns;
-import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
-import com.airbnb.lottie.LottieAnimationView;
 import com.google.firebase.analytics.FirebaseAnalytics;
 
 
-
+import co.kaua.palacepetz.Activitys.Services.ScheduledServicesActivity;
 import co.kaua.palacepetz.Adapters.LoadingDialog;
 import co.kaua.palacepetz.Adapters.Warnings;
 import co.kaua.palacepetz.Data.User.DtoUser;
 import co.kaua.palacepetz.Data.User.UserServices;
 import co.kaua.palacepetz.Firebase.ConfFirebase;
+import co.kaua.palacepetz.Methods.ValidateCPF;
 import co.kaua.palacepetz.R;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -44,15 +44,14 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class LoginActivity extends AppCompatActivity {
     //  Login items
     private EditText editLogin_emailUser, editLogin_passwordUser;
-    private LottieAnimationView progressDogLogin;
-    private TextView txt_SingInLogin;
+    private LinearLayout txt_SingUpLogin;
 
     //  User information
-    private int id_user, user_type;
-    private String name_user, _Email, cpf_user, address_user, complement, zipcode, phone_user, birth_date, img_user, password;
+    private int id_user, user_type, status;
+    private String name_user, Email_Username, cpf_user, address_user, complement, zipcode, phone_user, birth_date, img_user, password;
 
     //  Next Activity
-    private TextView txt_forgot_your_password, txt_SingUp;
+    private TextView txt_forgot_your_password;
 
     //  Login bottom
     private CardView cardBtn_SingIn;
@@ -83,15 +82,17 @@ public class LoginActivity extends AppCompatActivity {
         setContentView(R.layout.activity_login);
         Ids();
         getWindow().setStatusBarColor(getColor(R.color.background_bottom));
+        getWindow().setNavigationBarColor(getColor(R.color.white));
         cardBtn_SingIn.setElevation(20);
         verifyIfUsersLogged();
         Intent intent = getIntent();
         Bundle bundle = intent.getExtras();
         if (!(bundle == null)){
-            _Email = bundle.getString("email_user");
+
+            Email_Username = bundle.getString("email_user");
             password = bundle.getString("password_user");
             SHORTCUT_ID = bundle.getInt("shortcut");
-            editLogin_emailUser.setText(_Email);
+            editLogin_emailUser.setText(Email_Username);
             editLogin_passwordUser.setText(password);
         }
 
@@ -101,26 +102,35 @@ public class LoginActivity extends AppCompatActivity {
         cardBtn_SingIn.setOnClickListener(v -> {
             if (editLogin_emailUser.getText().length() == 0)
                 showError(editLogin_emailUser, getString(R.string.email_required));
-            else if (!Patterns.EMAIL_ADDRESS.matcher(editLogin_emailUser.getText()).matches())
-                showError(editLogin_emailUser, getString(R.string.informed_email_is_invalid));
             else if(editLogin_passwordUser.getText().length() == 0)
                 showError(editLogin_passwordUser, getString(R.string.password_required));
             else {
-                _Email = editLogin_emailUser.getText().toString().trim();
-                password = editLogin_passwordUser.getText().toString().trim();
                 cardBtn_SingIn.setElevation(0);
                 cardBtn_SingIn.setEnabled(false);
-                progressDogLogin.setVisibility(View.VISIBLE);
-                txt_SingInLogin.setVisibility(View.GONE);
-                DoLogin(_Email, password);
+                Email_Username = editLogin_emailUser.getText().toString().trim();
+                password = editLogin_passwordUser.getText().toString().trim();
+                try {
+                    if (ValidateCPF.isValidCPF(Email_Username)){
+                        StringBuilder sb = new StringBuilder(Email_Username.trim().replace(".", "").replace("-", ""));
+                        sb = sb.insert(3,".");
+                        sb = sb.insert(7,".");
+                        sb = sb.insert(11,"-");
+                        Email_Username = sb + "";
+                    }
+                    DoLogin(Email_Username + "", password);
+                }catch (Exception ex){
+                    DoLogin(Email_Username, password);
+                    Log.d("Login", ex.toString());
+                }
             }
         });
 
-        txt_SingUp.setOnClickListener(v -> {
+        txt_SingUpLogin.setOnClickListener(v -> {
             Intent goTo_SingUp = new Intent(this, CreateAccountActivity.class);
             ActivityOptionsCompat activityOptionsCompat = ActivityOptionsCompat.makeCustomAnimation(getApplicationContext(),R.anim.move_to_left, R.anim.move_to_right);
             ActivityCompat.startActivity(this, goTo_SingUp, activityOptionsCompat.toBundle());
             finish();
+            getWindow().setNavigationBarColor(getColor(R.color.background_top));
         });
 
         txt_forgot_your_password.setOnClickListener(v -> {
@@ -139,11 +149,9 @@ public class LoginActivity extends AppCompatActivity {
     private void Ids() {
         cardBtn_SingIn = findViewById(R.id.cardBtn_SingIn);
         txt_forgot_your_password = findViewById(R.id.txt_forgot_your_password);
-        txt_SingUp = findViewById(R.id.txt_SingUp);
+        txt_SingUpLogin = findViewById(R.id.txt_SingUpLogin);
         editLogin_emailUser = findViewById(R.id.editLogin_emailUser);
         editLogin_passwordUser = findViewById(R.id.editLogin_passwordUser);
-        progressDogLogin = findViewById(R.id.progressDogLogin);
-        txt_SingInLogin = findViewById(R.id.txt_SingInLogin);
         loadingDialog = new LoadingDialog(LoginActivity.this);
     }
 
@@ -169,17 +177,22 @@ public class LoginActivity extends AppCompatActivity {
                 @Override
                 public void onResponse(@NonNull Call<DtoUser> call, @NonNull Response<DtoUser> response) {
                     if (response.code() == 200){
+                        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+                        notificationManager.cancel(1);
                         // Obtain the FirebaseAnalytics instance.
                         mFirebaseAnalytics = ConfFirebase.getFirebaseAnalytics(LoginActivity.this);
                         Bundle bundle = new Bundle();
+                        assert response.body() != null;
+                        name_user = response.body().getName_user();
+                        id_user = response.body().getId_user();
                         bundle.putString(FirebaseAnalytics.Param.ITEM_ID, id_user + "");
                         bundle.putString(FirebaseAnalytics.Param.ITEM_NAME, name_user);
                         bundle.putString(FirebaseAnalytics.Param.CONTENT_TYPE, "user");
                         mFirebaseAnalytics.logEvent(FirebaseAnalytics.Event.LOGIN, bundle);
                         String emailUser;
-                        assert response.body() != null;
                         user_type = response.body().getUser_type();
                         if(user_type == 0){
+                            getWindow().setNavigationBarColor(getColor(R.color.background_top));
                             id_user = response.body().getId_user();
                             name_user = response.body().getName_user();
                             emailUser = response.body().getEmail();
@@ -190,12 +203,14 @@ public class LoginActivity extends AppCompatActivity {
                             birth_date = response.body().getBirth_date();
                             phone_user = response.body().getPhone_user();
                             img_user = response.body().getImg_user();
+                            status = response.body().getStatus();
                             mPrefs.edit().clear().apply();
                             SharedPreferences.Editor editor = mPrefs.edit();
                             editor.putString("pref_email", email);
                             editor.putString("pref_password", password);
                             editor.putString("pref_name_user", name_user);
                             editor.putInt("pref_id_user", id_user);
+                            editor.putInt("pref_status", status);
                             editor.putString("pref_cpf_user", cpf_user);
                             editor.putString("pref_address_user", address_user);
                             editor.putString("pref_complement", complement);
@@ -217,16 +232,13 @@ public class LoginActivity extends AppCompatActivity {
                             editLogin_passwordUser.setText(null);
                             cardBtn_SingIn.setElevation(20);
                             cardBtn_SingIn.setEnabled(true);
-                            progressDogLogin.setVisibility(View.GONE);
-                            txt_SingInLogin.setVisibility(View.VISIBLE);
                             loadingDialog.dimissDialog();
                         }
+
                     }else if(response.code() == 405){
                         cardBtn_SingIn.setEnabled(true);
                         cardBtn_SingIn.setElevation(20);
                         loadingDialog.dimissDialog();
-                        progressDogLogin.setVisibility(View.GONE);
-                        txt_SingInLogin.setVisibility(View.VISIBLE);
                         Warnings.showEmailIsNotVerified(LoginActivity.this);
                     }else if(response.code() == 401){
                         mPrefs.edit().clear().apply();
@@ -234,10 +246,15 @@ public class LoginActivity extends AppCompatActivity {
                         loadingDialog.dimissDialog();
                         editLogin_passwordUser.setText(null);
                         cardBtn_SingIn.setEnabled(true);
-                        progressDogLogin.setVisibility(View.GONE);
-                        txt_SingInLogin.setVisibility(View.VISIBLE);
                         Warnings.showWarning_Email_Password(LoginActivity.this);
-                    }else{
+                    }else if(response.code() == 410){
+                        mPrefs.edit().clear().apply();
+                        cardBtn_SingIn.setElevation(20);
+                        loadingDialog.dimissDialog();
+                        editLogin_passwordUser.setText(null);
+                        cardBtn_SingIn.setEnabled(true);
+                        Warnings.showAccountDisable(LoginActivity.this);
+                    } else{
                         loadingDialog.dimissDialog();
                         Warnings.showWeHaveAProblem(LoginActivity.this);
                     }
